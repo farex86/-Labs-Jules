@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
+import AnalyticsChart from '../../components/AnalyticsChart';
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState({
@@ -10,6 +11,11 @@ const AdminDashboard = () => {
     redemptionRate: 0,
   });
   const [recentTransactions, setRecentTransactions] = useState([]);
+  const [chartData, setChartData] = useState({
+    programDistribution: [],
+    monthlyTransactions: [],
+    statusDistribution: [],
+  });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -60,6 +66,36 @@ const AdminDashboard = () => {
       });
 
       setRecentTransactions(transactionsResult.data || []);
+
+      const { data: programData } = await supabase
+        .from('voucher_programs')
+        .select('name, vouchers(count)');
+
+      const programDistribution = (programData || []).map(p => ({
+        label: p.name,
+        value: p.vouchers?.[0]?.count || 0
+      }));
+
+      const { data: vouchersByStatus } = await supabase
+        .from('vouchers')
+        .select('status');
+
+      const statusCounts = (vouchersByStatus || []).reduce((acc, v) => {
+        acc[v.status] = (acc[v.status] || 0) + 1;
+        return acc;
+      }, {});
+
+      const statusDistribution = Object.entries(statusCounts).map(([key, value]) => ({
+        label: key.charAt(0).toUpperCase() + key.slice(1),
+        value
+      }));
+
+      setChartData({
+        programDistribution,
+        statusDistribution,
+        monthlyTransactions: []
+      });
+
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {

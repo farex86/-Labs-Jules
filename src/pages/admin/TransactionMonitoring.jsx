@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
+import { useRealtimeTransactions } from '../../hooks/useRealtime';
+import { exportTransactionsToCSV } from '../../utils/exportCSV';
 
 const TransactionMonitoring = () => {
   const [transactions, setTransactions] = useState([]);
@@ -13,6 +15,20 @@ const TransactionMonitoring = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const itemsPerPage = 15;
+
+  const handleRealtimeUpdate = useCallback((payload) => {
+    if (payload.eventType === 'INSERT') {
+      fetchTransactions();
+    } else if (payload.eventType === 'UPDATE') {
+      setTransactions(prev =>
+        prev.map(t => t.id === payload.new.id ? { ...t, ...payload.new } : t)
+      );
+    } else if (payload.eventType === 'DELETE') {
+      setTransactions(prev => prev.filter(t => t.id !== payload.old.id));
+    }
+  }, []);
+
+  useRealtimeTransactions(handleRealtimeUpdate);
 
   useEffect(() => {
     fetchData();
@@ -109,29 +125,7 @@ const TransactionMonitoring = () => {
   };
 
   const handleExportCSV = () => {
-    const headers = ['Voucher Code', 'Beneficiary', 'Vendor', 'Amount', 'Location', 'Timestamp', 'Status'];
-    const csvData = transactions.map(t => [
-      t.vouchers?.voucher_code || 'N/A',
-      t.vouchers?.beneficiaries?.full_name || 'N/A',
-      t.vendors?.business_name || 'N/A',
-      `SAR ${t.amount?.toFixed(2)}`,
-      t.location || 'N/A',
-      new Date(t.created_at).toLocaleString(),
-      t.status
-    ]);
-
-    const csvContent = [
-      headers.join(','),
-      ...csvData.map(row => row.map(cell => `"${cell}"`).join(','))
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `transactions_${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-    window.URL.revokeObjectURL(url);
+    exportTransactionsToCSV(transactions);
   };
 
   const getStatusColor = (status) => {
