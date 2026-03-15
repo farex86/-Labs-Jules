@@ -1,155 +1,446 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../../lib/supabase';
 
 const BeneficiaryManagement = () => {
+  const [beneficiaries, setBeneficiaries] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [editingBeneficiary, setEditingBeneficiary] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [formData, setFormData] = useState({
+    full_name: '',
+    email: '',
+    phone: '',
+    national_id: '',
+    family_size: 1,
+    address: '',
+    status: 'active',
+  });
+  const [formErrors, setFormErrors] = useState({});
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    fetchBeneficiaries();
+  }, []);
+
+  const fetchBeneficiaries = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('beneficiaries')
+        .select(`
+          *,
+          profiles (
+            full_name,
+            email,
+            phone
+          )
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setBeneficiaries(data || []);
+    } catch (error) {
+      console.error('Error fetching beneficiaries:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOpenModal = (beneficiary = null) => {
+    if (beneficiary) {
+      setEditingBeneficiary(beneficiary);
+      setFormData({
+        full_name: beneficiary.profiles?.full_name || '',
+        email: beneficiary.profiles?.email || '',
+        phone: beneficiary.profiles?.phone || '',
+        national_id: beneficiary.national_id || '',
+        family_size: beneficiary.family_size || 1,
+        address: beneficiary.address || '',
+        status: beneficiary.status || 'active',
+      });
+    } else {
+      setEditingBeneficiary(null);
+      setFormData({
+        full_name: '',
+        email: '',
+        phone: '',
+        national_id: '',
+        family_size: 1,
+        address: '',
+        status: 'active',
+      });
+    }
+    setFormErrors({});
+    setShowModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setEditingBeneficiary(null);
+    setFormData({
+      full_name: '',
+      email: '',
+      phone: '',
+      national_id: '',
+      family_size: 1,
+      address: '',
+      status: 'active',
+    });
+    setFormErrors({});
+  };
+
+  const validateForm = () => {
+    const errors = {};
+    if (!formData.full_name.trim()) errors.full_name = 'Full name is required';
+    if (!formData.email.trim()) errors.email = 'Email is required';
+    if (!formData.national_id.trim()) errors.national_id = 'National ID is required';
+    if (formData.family_size < 1) errors.family_size = 'Family size must be at least 1';
+    return errors;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const errors = validateForm();
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      if (editingBeneficiary) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({
+            full_name: formData.full_name,
+            phone: formData.phone,
+          })
+          .eq('id', editingBeneficiary.user_id);
+
+        if (profileError) throw profileError;
+
+        const { error: beneficiaryError } = await supabase
+          .from('beneficiaries')
+          .update({
+            national_id: formData.national_id,
+            family_size: formData.family_size,
+            address: formData.address,
+            status: formData.status,
+          })
+          .eq('id', editingBeneficiary.id);
+
+        if (beneficiaryError) throw beneficiaryError;
+      } else {
+        const password = Math.random().toString(36).slice(-8);
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+          email: formData.email,
+          password: password,
+        });
+
+        if (authError) throw authError;
+
+        if (authData.user) {
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .insert([{
+              id: authData.user.id,
+              email: formData.email,
+              full_name: formData.full_name,
+              role: 'beneficiary',
+              phone: formData.phone,
+            }]);
+
+          if (profileError) throw profileError;
+
+          const { error: beneficiaryError } = await supabase
+            .from('beneficiaries')
+            .insert([{
+              user_id: authData.user.id,
+              national_id: formData.national_id,
+              family_size: formData.family_size,
+              address: formData.address,
+              status: formData.status,
+            }]);
+
+          if (beneficiaryError) throw beneficiaryError;
+        }
+      }
+
+      await fetchBeneficiaries();
+      handleCloseModal();
+    } catch (error) {
+      console.error('Error saving beneficiary:', error);
+      setFormErrors({ submit: error.message });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (beneficiaryId, userId) => {
+    if (!confirm('Are you sure you want to delete this beneficiary?')) return;
+
+    try {
+      const { error } = await supabase
+        .from('beneficiaries')
+        .delete()
+        .eq('id', beneficiaryId);
+
+      if (error) throw error;
+      await fetchBeneficiaries();
+    } catch (error) {
+      console.error('Error deleting beneficiary:', error);
+    }
+  };
+
+  const filteredBeneficiaries = beneficiaries.filter((b) =>
+    b.profiles?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    b.national_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    b.profiles?.email?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      {/* Header */}
       <header className="h-20 bg-white dark:bg-slate-900 border-b border-primary/10 flex items-center justify-between px-8 shrink-0">
         <div className="flex items-center gap-4">
           <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Beneficiary Management</h2>
+          <span className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm font-bold">
+            {beneficiaries.length} Total
+          </span>
         </div>
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 px-4 py-2 border border-primary/20 text-primary font-semibold text-sm rounded-lg hover:bg-primary/5 transition-colors">
-            <span className="material-symbols-outlined text-xl">upload</span>
-            Upload CSV
-          </button>
-          <button className="flex items-center gap-2 px-4 py-2 bg-primary text-white font-semibold text-sm rounded-lg hover:bg-primary/90 transition-shadow shadow-lg shadow-primary/20">
+          <button
+            onClick={() => handleOpenModal()}
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-white font-semibold text-sm rounded-lg hover:bg-primary/90 transition-shadow shadow-lg shadow-primary/20"
+          >
             <span className="material-symbols-outlined text-xl">add</span>
             Add Beneficiary
           </button>
         </div>
       </header>
 
-      {/* Content Area */}
       <div className="flex-1 overflow-y-auto p-8 space-y-6">
-        {/* Filter Bar */}
-        <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-primary/10 flex flex-wrap gap-4 items-center">
-          <div className="flex-1 min-w-[300px] relative">
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-primary/10 flex gap-4 items-center">
+          <div className="flex-1 relative">
             <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">search</span>
-            <input className="w-full pl-10 pr-4 py-2.5 bg-background-light dark:bg-slate-800 border-none rounded-lg focus:ring-2 focus:ring-primary/50 text-sm" placeholder="Search by name, ID or phone..." type="text"/>
-          </div>
-          <div className="flex gap-3">
-            <div className="relative">
-              <select className="appearance-none pl-4 pr-10 py-2.5 bg-background-light dark:bg-slate-800 border-none rounded-lg focus:ring-2 focus:ring-primary/50 text-sm font-medium cursor-pointer">
-                <option>All Locations</option>
-                <option>Nairobi</option>
-                <option>Mombasa</option>
-                <option>Kisumu</option>
-              </select>
-              <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">keyboard_arrow_down</span>
-            </div>
-            <div className="relative">
-              <select className="appearance-none pl-4 pr-10 py-2.5 bg-background-light dark:bg-slate-800 border-none rounded-lg focus:ring-2 focus:ring-primary/50 text-sm font-medium cursor-pointer">
-                <option>All Programs</option>
-                <option>Food Security</option>
-                <option>Health Care</option>
-                <option>Education Support</option>
-              </select>
-              <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">keyboard_arrow_down</span>
-            </div>
-            <button className="flex items-center gap-2 px-4 py-2.5 text-slate-600 dark:text-slate-300 font-medium text-sm hover:bg-background-light dark:hover:bg-slate-800 rounded-lg transition-colors">
-              <span className="material-symbols-outlined text-xl">filter_list</span>
-              More Filters
-            </button>
+            <input
+              className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border-none rounded-lg focus:ring-2 focus:ring-primary/50 text-sm"
+              placeholder="Search by name, ID or email..."
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
           </div>
         </div>
 
-        {/* Table Container */}
-        <div className="bg-white dark:bg-slate-900 rounded-xl border border-primary/10 overflow-hidden">
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-primary/10 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-background-light/50 dark:bg-slate-800/50 border-b border-primary/10">
-                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Name</th>
-                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Phone / ID</th>
-                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Location</th>
-                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Program</th>
-                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Voucher Status</th>
-                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 text-right">Actions</th>
+            <table className="w-full text-left">
+              <thead className="bg-slate-50 dark:bg-slate-800/50">
+                <tr>
+                  <th className="px-6 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Beneficiary</th>
+                  <th className="px-6 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">National ID</th>
+                  <th className="px-6 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Contact</th>
+                  <th className="px-6 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Family Size</th>
+                  <th className="px-6 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Balance</th>
+                  <th className="px-6 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-primary/5">
-                {[
-                  { name: 'John Doe', initial: 'JD', phone: '+254 712 345 678', id: 'ID-10029384', loc: 'Nairobi, Embakasi', program: 'Food Security', status: 'Active', color: 'emerald' },
-                  { name: 'Jane Smith', initial: 'JS', phone: '+254 723 456 789', id: 'ID-88273611', loc: 'Mombasa, Nyali', program: 'Education Support', status: 'Pending', color: 'amber' },
-                  { name: 'Michael Lee', initial: 'ML', phone: '+254 734 567 890', id: 'ID-44556677', loc: 'Nakuru, Lanet', program: 'Water Access', status: 'Redeemed', color: 'slate' },
-                  { name: 'Alice Johnson', initial: 'AJ', phone: '+254 745 678 901', id: 'ID-99211233', loc: 'Nairobi, Westlands', program: 'Food Security', status: 'Active', color: 'emerald' },
-                ].map((row, i) => (
-                  <tr key={i} className="hover:bg-primary/5 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                {filteredBeneficiaries.length > 0 ? filteredBeneficiaries.map((beneficiary) => (
+                  <tr key={beneficiary.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                    <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="size-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs">{row.initial}</div>
-                        <span className="text-sm font-semibold text-slate-900 dark:text-white">{row.name}</span>
+                        <div className="size-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+                          {beneficiary.profiles?.full_name?.charAt(0) || 'B'}
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold">{beneficiary.profiles?.full_name || 'Unknown'}</p>
+                          <p className="text-xs text-slate-500">{beneficiary.profiles?.email || 'N/A'}</p>
+                        </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">
-                      {row.phone}<br/>
-                      <span className="text-xs font-mono text-slate-400">{row.id}</span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">{row.loc}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${row.program === 'Food Security' ? 'bg-primary/10 text-primary' : row.program === 'Education Support' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'}`}>
-                        {row.program}
+                    <td className="px-6 py-4 text-sm font-medium">{beneficiary.national_id}</td>
+                    <td className="px-6 py-4 text-sm">{beneficiary.profiles?.phone || 'N/A'}</td>
+                    <td className="px-6 py-4 text-sm">{beneficiary.family_size} members</td>
+                    <td className="px-6 py-4 text-sm font-bold">SAR {beneficiary.total_balance?.toFixed(2) || '0.00'}</td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-bold uppercase ${
+                        beneficiary.status === 'active' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
+                        beneficiary.status === 'inactive' ? 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400' :
+                        'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                      }`}>
+                        {beneficiary.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className={`flex items-center gap-1.5 text-${row.color}-600 dark:text-${row.color}-400`}>
-                        <span className={`size-2 rounded-full bg-${row.color}-500`}></span>
-                        <span className="text-xs font-bold">{row.status}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <div className="flex justify-end gap-2">
-                        <button className="p-1.5 hover:bg-white dark:hover:bg-slate-700 rounded text-slate-400 hover:text-primary transition-colors">
+                    <td className="px-6 py-4">
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleOpenModal(beneficiary)}
+                          className="p-2 text-slate-600 dark:text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-colors"
+                        >
                           <span className="material-symbols-outlined text-lg">edit</span>
                         </button>
-                        <button className="px-3 py-1 text-xs font-bold text-primary hover:underline">View Details</button>
+                        <button
+                          onClick={() => handleDelete(beneficiary.id, beneficiary.user_id)}
+                          className="p-2 text-slate-600 dark:text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                        >
+                          <span className="material-symbols-outlined text-lg">delete</span>
+                        </button>
                       </div>
                     </td>
                   </tr>
-                ))}
+                )) : (
+                  <tr>
+                    <td colSpan="7" className="px-6 py-8 text-center text-slate-500">
+                      No beneficiaries found
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
-          {/* Pagination */}
-          <div className="px-6 py-4 bg-background-light/30 dark:bg-slate-800/30 border-t border-primary/10 flex items-center justify-between">
-            <p className="text-sm text-slate-500 font-medium">Showing 1-4 of 1,248 beneficiaries</p>
-            <div className="flex items-center gap-2">
-              <button className="p-1 rounded border border-primary/10 hover:bg-white dark:hover:bg-slate-700 disabled:opacity-50 transition-colors" disabled>
-                <span className="material-symbols-outlined text-xl">chevron_left</span>
-              </button>
-              <button className="size-8 rounded bg-primary text-white text-xs font-bold shadow shadow-primary/20">1</button>
-              <button className="size-8 rounded hover:bg-white dark:hover:bg-slate-700 text-xs font-bold border border-primary/5">2</button>
-              <button className="size-8 rounded hover:bg-white dark:hover:bg-slate-700 text-xs font-bold border border-primary/5">3</button>
-              <span className="text-slate-400 mx-1">...</span>
-              <button className="size-8 rounded hover:bg-white dark:hover:bg-slate-700 text-xs font-bold border border-primary/5">312</button>
-              <button className="p-1 rounded border border-primary/10 hover:bg-white dark:hover:bg-slate-700 transition-colors">
-                <span className="material-symbols-outlined text-xl">chevron_right</span>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {[
-            { label: 'Total Beneficiaries', value: '1,248', icon: 'groups', trend: '+12% this month', color: 'primary' },
-            { label: 'Active Vouchers', value: '842', icon: 'confirmation_number', progress: '67%', color: 'emerald' },
-            { label: 'Pending Approvals', value: '56', icon: 'hourglass_empty', note: 'Requires admin review', color: 'amber' },
-          ].map((card, i) => (
-            <div key={i} className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-primary/10 shadow-sm">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">{card.label}</span>
-                <span className={`material-symbols-outlined text-${card.color}-500`}>{card.icon}</span>
-              </div>
-              <p className="text-3xl font-bold text-slate-900 dark:text-white">{card.value}</p>
-              {card.trend && <p className="text-xs text-emerald-600 font-bold mt-2 flex items-center gap-1"><span className="material-symbols-outlined text-sm">trending_up</span>{card.trend}</p>}
-              {card.progress && <div className="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full mt-4 overflow-hidden"><div className="bg-emerald-500 h-full" style={{ width: card.progress }}></div></div>}
-              {card.note && <p className="text-xs text-slate-500 mt-2 italic font-medium">{card.note}</p>}
-            </div>
-          ))}
         </div>
       </div>
+
+      {showModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-slate-200 dark:border-slate-800">
+              <h3 className="text-xl font-bold text-slate-900 dark:text-white">
+                {editingBeneficiary ? 'Edit Beneficiary' : 'Add New Beneficiary'}
+              </h3>
+            </div>
+            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+              {formErrors.submit && (
+                <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-800 dark:text-red-200">
+                  {formErrors.submit}
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                    Full Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.full_name}
+                    onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary dark:bg-slate-800"
+                  />
+                  {formErrors.full_name && <p className="text-xs text-red-600 mt-1">{formErrors.full_name}</p>}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                    Email *
+                  </label>
+                  <input
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    disabled={editingBeneficiary}
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary dark:bg-slate-800 disabled:opacity-50"
+                  />
+                  {formErrors.email && <p className="text-xs text-red-600 mt-1">{formErrors.email}</p>}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                    National ID *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.national_id}
+                    onChange={(e) => setFormData({ ...formData, national_id: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary dark:bg-slate-800"
+                  />
+                  {formErrors.national_id && <p className="text-xs text-red-600 mt-1">{formErrors.national_id}</p>}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                    Phone
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary dark:bg-slate-800"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                    Family Size
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={formData.family_size}
+                    onChange={(e) => setFormData({ ...formData, family_size: parseInt(e.target.value) })}
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary dark:bg-slate-800"
+                  />
+                  {formErrors.family_size && <p className="text-xs text-red-600 mt-1">{formErrors.family_size}</p>}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                    Status
+                  </label>
+                  <select
+                    value={formData.status}
+                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary dark:bg-slate-800"
+                  >
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                    <option value="suspended">Suspended</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  Address
+                </label>
+                <textarea
+                  value={formData.address}
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  rows="3"
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary dark:bg-slate-800"
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={handleCloseModal}
+                  className="px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50"
+                >
+                  {submitting ? 'Saving...' : editingBeneficiary ? 'Update' : 'Create'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

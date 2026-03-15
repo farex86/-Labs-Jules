@@ -1,6 +1,80 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../../lib/supabase';
 
 const AdminDashboard = () => {
+  const [stats, setStats] = useState({
+    totalBeneficiaries: 0,
+    activeVendors: 0,
+    vouchersIssued: 0,
+    vouchersRedeemed: 0,
+    redemptionRate: 0,
+  });
+  const [recentTransactions, setRecentTransactions] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      const [beneficiariesResult, vendorsResult, vouchersResult, transactionsResult] = await Promise.all([
+        supabase.from('beneficiaries').select('id', { count: 'exact', head: true }),
+        supabase.from('vendors').select('id', { count: 'exact', head: true }).eq('status', 'active'),
+        supabase.from('vouchers').select('id, status', { count: 'exact' }),
+        supabase.from('transactions')
+          .select(`
+            id,
+            amount,
+            status,
+            created_at,
+            beneficiary_id,
+            vendor_id,
+            beneficiaries (
+              profiles (
+                full_name
+              ),
+              national_id
+            ),
+            vendors (
+              business_name
+            ),
+            vouchers (
+              code
+            )
+          `)
+          .order('created_at', { ascending: false })
+          .limit(5)
+      ]);
+
+      const vouchersIssued = vouchersResult.count || 0;
+      const vouchersRedeemed = vouchersResult.data?.filter(v => v.status === 'used').length || 0;
+      const redemptionRate = vouchersIssued > 0 ? ((vouchersRedeemed / vouchersIssued) * 100).toFixed(1) : 0;
+
+      setStats({
+        totalBeneficiaries: beneficiariesResult.count || 0,
+        activeVendors: vendorsResult.count || 0,
+        vouchersIssued,
+        vouchersRedeemed,
+        redemptionRate,
+      });
+
+      setRecentTransactions(transactionsResult.data || []);
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-full">
       <header className="h-16 flex items-center justify-between px-8 bg-white dark:bg-slate-900 border-b border-primary/10 shadow-sm z-10 shrink-0">
@@ -43,16 +117,15 @@ const AdminDashboard = () => {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           {[
-            { label: 'Total Beneficiaries', value: '12,450', change: '+2.4%', width: '85%' },
-            { label: 'Active Vendors', value: '420', change: '+1.2%', width: '65%' },
-            { label: 'Vouchers Issued', value: '50,000', change: '+5.0%', width: '92%' },
-            { label: 'Vouchers Redeemed', value: '38,200', change: '+4.1%', width: '76%' },
+            { label: 'Total Beneficiaries', value: stats.totalBeneficiaries.toLocaleString(), width: '85%' },
+            { label: 'Active Vendors', value: stats.activeVendors.toLocaleString(), width: '65%' },
+            { label: 'Vouchers Issued', value: stats.vouchersIssued.toLocaleString(), width: '92%' },
+            { label: 'Vouchers Redeemed', value: stats.vouchersRedeemed.toLocaleString(), width: '76%' },
           ].map((stat, i) => (
             <div key={i} className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-primary/10 shadow-sm">
               <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">{stat.label}</p>
               <div className="flex items-baseline justify-between">
                 <h3 className="text-2xl font-bold">{stat.value}</h3>
-                <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">{stat.change}</span>
               </div>
               <div className="mt-4 h-1 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                 <div className="bg-primary h-full" style={{ width: stat.width }}></div>
@@ -62,11 +135,10 @@ const AdminDashboard = () => {
           <div className="bg-primary p-5 rounded-xl shadow-lg shadow-primary/20 text-white">
             <p className="text-xs font-semibold text-primary/30 uppercase tracking-wider mb-2 brightness-200">Redemption Rate</p>
             <div className="flex items-baseline justify-between">
-              <h3 className="text-2xl font-bold">76.4%</h3>
-              <span className="text-[10px] font-bold text-white bg-white/20 px-1.5 py-0.5 rounded">+0.5%</span>
+              <h3 className="text-2xl font-bold">{stats.redemptionRate}%</h3>
             </div>
             <div className="mt-4 h-1 w-full bg-white/20 rounded-full overflow-hidden">
-              <div className="bg-white h-full w-[76%]"></div>
+              <div className="bg-white h-full" style={{ width: `${stats.redemptionRate}%` }}></div>
             </div>
           </div>
         </div>
@@ -151,31 +223,39 @@ const AdminDashboard = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {[
-                  { name: 'Ahmed Mansour', id: '#KH-4492', vId: 'VOC-2024-0012', vendor: 'Al-Falah General Store', status: 'Completed', amount: '$45.00', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB9qxigY-U_4UsBjiHLuXa8358iwvoX7qjzyYUUww1HheXYQxfvKaw51wj1_xh6BrLVOqN2fgAaqop3t6qtiaOQ0xtzSQKP1bmbkB4rpVZHZ8PIuwcSrvyLfCRX9NGXncRSae-66zebsBGVlnZZgxaQRyGxxf82oKZEW6V9atIZgzCvWM3Nb7TABHINV3hErmjkZuqXXQSD3R-T85VUNfvOv-OiLyXQAOIQ0bt0zroPM80molgWGhH5Lino3fyUOc6709k8EP9DlCQ' },
-                  { name: 'Fatima Ibrahim', id: '#DR-8821', vId: 'VOC-2024-0015', vendor: 'Sunrise Pharmacy', status: 'Pending', amount: '$22.50', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBDkW3l0Y6KPYF59Epo5yQaCxCi44Yx90eQZlVmAnbhzQfJu7hMjiOUb4rjv7JLwaxcHj_nvL6yPF1D3vgWHab6S_KJnpNdI-L_UTpjFhdMAdI49qU034kEY-Ghf73J3taURpWJr97Hf9YvXeiciJEb8Rs41DZYDVYQ9B2qRv8nvv59RScKJ_mntUYKd53AkSGByN7mfQBimk0d1RaakmgbBa4RJsayFbm-QfGjMEiEyp5vgFKPMGGeQNJhOuGB_-0ZLTRGk_9VR3w' },
-                  { name: 'Musa Khalil', id: '#KS-1120', vId: 'VOC-2024-0018', vendor: 'Central Market Hub', status: 'Completed', amount: '$110.00', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAlQGT2zdVk0qFgxVDopg5ChSmERKfG34fwSKspFi888-aZwYByTXP5pbsscquXHmAsGXh_5nE4Qa_SXv10jD7cT5Fy2-E8-LAVIg93HNEzK0M5gprcXMIaW0OxEM1ZkZIO_EImU5VVd_pWM0Edcj_HxSvwyrfnhhWk56xZAkvhnC3_hjcCPLiuXfcY4Vp3_GG1dHuktt3kRBXgRRcnnkWisNkd51tsF236a05FIkNNbzVzFX7WJt1Igx_LTWQmOMypskh5pZz1Pc0' },
-                ].map((row, i) => (
-                  <tr key={i}>
+                {recentTransactions.length > 0 ? recentTransactions.map((transaction) => (
+                  <tr key={transaction.id}>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="size-8 rounded-full bg-slate-200 dark:bg-slate-700 bg-cover" style={{ backgroundImage: `url('${row.img}')` }}></div>
+                        <div className="size-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs">
+                          {transaction.beneficiaries?.profiles?.full_name?.charAt(0) || 'B'}
+                        </div>
                         <div>
-                          <p className="text-sm font-semibold">{row.name}</p>
-                          <p className="text-[10px] text-slate-500">ID: {row.id}</p>
+                          <p className="text-sm font-semibold">{transaction.beneficiaries?.profiles?.full_name || 'Unknown'}</p>
+                          <p className="text-[10px] text-slate-500">ID: {transaction.beneficiaries?.national_id || 'N/A'}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-sm font-medium">{row.vId}</td>
-                    <td className="px-6 py-4 text-sm">{row.vendor}</td>
+                    <td className="px-6 py-4 text-sm font-medium">{transaction.vouchers?.code || 'N/A'}</td>
+                    <td className="px-6 py-4 text-sm">{transaction.vendors?.business_name || 'Unknown Vendor'}</td>
                     <td className="px-6 py-4">
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase ${row.status === 'Completed' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
-                        {row.status}
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                        transaction.status === 'completed' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
+                        transaction.status === 'pending' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
+                        'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                      }`}>
+                        {transaction.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-sm font-bold text-right">{row.amount}</td>
+                    <td className="px-6 py-4 text-sm font-bold text-right">SAR {transaction.amount?.toFixed(2) || '0.00'}</td>
                   </tr>
-                ))}
+                )) : (
+                  <tr>
+                    <td colSpan="5" className="px-6 py-8 text-center text-slate-500">
+                      No transactions yet
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
