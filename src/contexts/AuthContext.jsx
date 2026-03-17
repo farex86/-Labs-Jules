@@ -86,7 +86,17 @@ export const AuthProvider = ({ children }) => {
       password,
     });
 
-    if (error) throw error;
+    if (error) {
+      if (error.message?.includes('Invalid login credentials')) {
+        throw new Error('Invalid email or password');
+      }
+      throw error;
+    }
+
+    if (data.user) {
+      await fetchProfile(data.user.id);
+    }
+
     return data;
   };
 

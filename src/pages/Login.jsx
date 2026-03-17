@@ -16,31 +16,51 @@ const Login = () => {
     setError('');
     setLoading(true);
 
+    if (!email || !password) {
+      setError('Please enter both email and password');
+      setLoading(false);
+      return;
+    }
+
     try {
       await signIn(email, password);
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('email', email)
-        .maybeSingle();
 
-      if (profileData) {
-        switch (profileData.role) {
-          case 'admin':
-            navigate('/admin');
-            break;
-          case 'beneficiary':
-            navigate('/beneficiary');
-            break;
-          case 'vendor':
-            navigate('/vendor');
-            break;
-          default:
-            navigate('/');
+      // Get user profile to determine role
+      const { data: { user } } = await supabase.auth.getSession();
+      if (user) {
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .maybeSingle();
+
+        if (profileError) {
+          throw new Error('Failed to load user profile');
+        }
+
+        if (profileData) {
+          switch (profileData.role) {
+            case 'admin':
+              navigate('/admin');
+              break;
+            case 'beneficiary':
+              navigate('/beneficiary');
+              break;
+            case 'vendor':
+              navigate('/vendor');
+              break;
+            default:
+              setError('Unknown user role');
+              return;
+          }
+        } else {
+          setError('User profile not found. Please contact administrator.');
         }
       }
     } catch (err) {
-      setError(err.message || 'Failed to sign in');
+      const errorMessage = err.message || 'Failed to sign in';
+      setError(errorMessage);
+      console.error('Login error:', err);
     } finally {
       setLoading(false);
     }
@@ -51,11 +71,20 @@ const Login = () => {
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <h2 className="text-3xl font-bold text-slate-900 dark:text-slate-100">
-            Sign in to your account
+            Sign in
           </h2>
           <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
             Voucher Management System
           </p>
+        </div>
+
+        <div className="rounded-lg bg-blue-50 dark:bg-blue-900/20 p-4 border border-blue-200 dark:border-blue-800">
+          <p className="text-xs font-semibold text-blue-900 dark:text-blue-200 mb-3">Demo Credentials:</p>
+          <div className="space-y-2 text-xs text-blue-800 dark:text-blue-300">
+            <div><strong>Admin:</strong> admin@demo.local / Admin123!</div>
+            <div><strong>Beneficiary:</strong> beneficiary@demo.local / Beneficiary123!</div>
+            <div><strong>Vendor:</strong> vendor@demo.local / Vendor123!</div>
+          </div>
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
