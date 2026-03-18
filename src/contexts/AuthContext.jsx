@@ -44,14 +44,30 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const fetchProfile = async (userId) => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .maybeSingle();
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 5000);
 
-    if (data && !error) {
-      setProfile(data);
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
+
+      clearTimeout(timeout);
+
+      if (error) {
+        console.error('Error fetching profile:', error);
+        setProfile(null);
+      } else if (data) {
+        setProfile(data);
+      } else {
+        console.warn('No profile found for user:', userId);
+        setProfile(null);
+      }
+    } catch (err) {
+      console.error('Profile fetch error:', err);
+      setProfile(null);
     }
   };
 

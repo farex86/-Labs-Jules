@@ -6,9 +6,9 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [formLoading, setFormLoading] = useState(false);
   const navigate = useNavigate();
-  const { signIn, user, profile } = useAuth();
+  const { signIn, user, profile, loading: authLoading } = useAuth();
 
   useEffect(() => {
     if (user && profile) {
@@ -24,18 +24,22 @@ const Login = () => {
           break;
         default:
           setError('Unknown user role');
+          setFormLoading(false);
       }
+    } else if (user && !authLoading && !profile) {
+      setError('User profile not found. Please contact administrator.');
+      setFormLoading(false);
     }
-  }, [user, profile, navigate]);
+  }, [user, profile, authLoading, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    setLoading(true);
+    setFormLoading(true);
 
     if (!email || !password) {
       setError('Please enter both email and password');
-      setLoading(false);
+      setFormLoading(false);
       return;
     }
 
@@ -46,8 +50,12 @@ const Login = () => {
       const errorMessage = err.message || 'Failed to sign in';
       setError(errorMessage);
       console.error('Login error:', err);
-      setLoading(false);
+      setFormLoading(false);
     }
+  };
+
+  const handleInputChange = () => {
+    if (error) setError('');
   };
 
   return (
@@ -116,10 +124,10 @@ const Login = () => {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={formLoading}
             className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? 'Signing in...' : 'Sign in'}
+            {formLoading ? 'Signing in...' : 'Sign in'}
           </button>
         </form>
       </div>
