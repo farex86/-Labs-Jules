@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabase';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -9,7 +8,25 @@ const Login = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { signIn } = useAuth();
+  const { signIn, user, profile } = useAuth();
+
+  useEffect(() => {
+    if (user && profile) {
+      switch (profile.role) {
+        case 'admin':
+          navigate('/admin');
+          break;
+        case 'beneficiary':
+          navigate('/beneficiary');
+          break;
+        case 'vendor':
+          navigate('/vendor');
+          break;
+        default:
+          setError('Unknown user role');
+      }
+    }
+  }, [user, profile, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -24,44 +41,11 @@ const Login = () => {
 
     try {
       await signIn(email, password);
-
-      // Get user profile to determine role
-      const { data: { user } } = await supabase.auth.getSession();
-      if (user) {
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', user.id)
-          .maybeSingle();
-
-        if (profileError) {
-          throw new Error('Failed to load user profile');
-        }
-
-        if (profileData) {
-          switch (profileData.role) {
-            case 'admin':
-              navigate('/admin');
-              break;
-            case 'beneficiary':
-              navigate('/beneficiary');
-              break;
-            case 'vendor':
-              navigate('/vendor');
-              break;
-            default:
-              setError('Unknown user role');
-              return;
-          }
-        } else {
-          setError('User profile not found. Please contact administrator.');
-        }
-      }
+      // Redirect will happen via AuthContext state changes
     } catch (err) {
       const errorMessage = err.message || 'Failed to sign in';
       setError(errorMessage);
       console.error('Login error:', err);
-    } finally {
       setLoading(false);
     }
   };
