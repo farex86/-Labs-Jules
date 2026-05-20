@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminLayout from './layouts/AdminLayout';
@@ -25,6 +26,9 @@ import TransactionHistory from './pages/beneficiary/TransactionHistory';
 // Vendor Pages
 import VendorLogin from './pages/vendor/VendorLogin';
 import VendorDashboard from './pages/vendor/VendorDashboard';
+
+// Public/Tools Pages
+import SolarCalculator from './pages/calculator/SolarCalculator';
 import RedeemVoucher from './pages/vendor/RedeemVoucher';
 import VoucherDetails from './pages/vendor/VoucherDetails';
 import RedemptionConfirmation from './pages/vendor/RedemptionConfirmation';
@@ -35,9 +39,11 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <Toaster position="top-center" reverseOrder={false} />
         <Routes>
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/calculator" element={<SolarCalculator />} />
 
           {/* Admin Routes */}
           <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin']}><AdminLayout /></ProtectedRoute>}>
