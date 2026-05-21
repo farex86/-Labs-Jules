@@ -31,6 +31,9 @@ import RedemptionConfirmation from './pages/vendor/RedemptionConfirmation';
 import VendorHistory from './pages/vendor/VendorHistory';
 import SyncData from './pages/vendor/SyncData';
 
+// Solar Calculator
+import SolarCalculator from './pages/solar/SolarCalculator';
+
 function App() {
   return (
     <BrowserRouter>
@@ -70,6 +73,9 @@ function App() {
             <Route path="sync" element={<SyncData />} />
             <Route path="settings" element={<div className="p-4">Vendor Settings Placeholder</div>} />
           </Route>
+
+          {/* Solar Calculator Route */}
+          <Route path="/solar-calculator" element={<SolarCalculator />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>
