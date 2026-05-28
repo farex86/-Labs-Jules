@@ -99,9 +99,9 @@ const AnalyticsChart = ({ data, type = 'bar', title }) => {
     const slices = data.map((item, index) => {
       const percentage = (item.value / total) * 100;
       const angle = (percentage / 100) * 360;
-      const startAngle = currentAngle;
+      const startAngle = index === 0 ? 0 : data.slice(0, index).reduce((sum, d) => sum + (d.value / total) * 360, 0);
       const endAngle = currentAngle + angle;
-      currentAngle = endAngle;
+      const newAngle = endAngle;
 
       const startX = 50 + 40 * Math.cos((startAngle * Math.PI) / 180);
       const startY = 50 + 40 * Math.sin((startAngle * Math.PI) / 180);

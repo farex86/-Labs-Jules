@@ -1,3 +1,4 @@
+cat << 'INNER_EOF' > src/contexts/AuthContext.jsx
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 
@@ -133,3 +134,4 @@ export const AuthProvider = ({ children }) => {
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
+INNER_EOF
