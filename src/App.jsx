@@ -5,6 +5,10 @@ import ProtectedRoute from './components/ProtectedRoute';
 import AdminLayout from './layouts/AdminLayout';
 import BeneficiaryLayout from './layouts/BeneficiaryLayout';
 import VendorLayout from './layouts/VendorLayout';
+import PublicLayout from './layouts/PublicLayout';
+
+// Public Pages
+import SolarCalculator from './pages/public/SolarCalculator';
 
 // Auth Pages
 import Login from './pages/Login';
@@ -36,7 +40,12 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
         <Routes>
-          <Route path="/" element={<Navigate to="/login" replace />} />
+          {/* Public Routes */}
+          <Route path="/" element={<PublicLayout />}>
+            <Route index element={<Navigate to="/solar-calculator" replace />} />
+            <Route path="solar-calculator" element={<SolarCalculator />} />
+          </Route>
+
           <Route path="/login" element={<Login />} />
 
           {/* Admin Routes */}
