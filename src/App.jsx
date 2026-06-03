@@ -1,3 +1,5 @@
+import PublicLayout from './layouts/PublicLayout';
+import SolarCalculator from './pages/public/SolarCalculator';
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
@@ -36,7 +38,10 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
         <Routes>
-          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route element={<PublicLayout />}>
+            <Route path="/" element={<Navigate to="/calculator" replace />} />
+            <Route path="/calculator" element={<SolarCalculator />} />
+          </Route>
           <Route path="/login" element={<Login />} />
 
           {/* Admin Routes */}
