@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { Calculator } from 'lucide-react';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -130,6 +131,13 @@ const Login = () => {
             {formLoading ? 'Signing in...' : 'Sign in'}
           </button>
         </form>
+
+        <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-800 text-center">
+          <Link to="/calculator" className="inline-flex items-center text-slate-600 hover:text-primary dark:text-slate-400 dark:hover:text-primary transition-colors">
+            <Calculator className="h-5 w-5 mr-2" />
+            <span className="font-medium">Solar Calculator Tool</span>
+          </Link>
+        </div>
       </div>
     </div>
   );
