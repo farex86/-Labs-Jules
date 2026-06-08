@@ -11,6 +11,19 @@ const RedeemVoucher = () => {
   useEffect(() => {
     let scanner;
 
+    const onScanSuccess = (decodedText) => {
+      try {
+        const voucherData = JSON.parse(decodedText);
+        navigate('/vendor/details', { state: { voucherData } });
+      } catch {
+        setError('Invalid QR code format');
+      }
+    };
+
+    const onScanError = (err) => {
+      console.log('QR scan error:', err);
+    };
+
     if (showScanner) {
       scanner = new Html5QrcodeScanner(
         'qr-reader',
@@ -30,20 +43,7 @@ const RedeemVoucher = () => {
         scanner.clear().catch(console.error);
       }
     };
-  }, [showScanner]);
-
-  const onScanSuccess = (decodedText) => {
-    try {
-      const voucherData = JSON.parse(decodedText);
-      navigate('/vendor/details', { state: { voucherData } });
-    } catch (err) {
-      setError('Invalid QR code format');
-    }
-  };
-
-  const onScanError = (err) => {
-    console.log('QR scan error:', err);
-  };
+  }, [showScanner, navigate]);
 
   const handleManualValidation = () => {
     if (!manualCode.trim()) {
