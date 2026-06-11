@@ -130,6 +130,16 @@ const Login = () => {
             {formLoading ? 'Signing in...' : 'Sign in'}
           </button>
         </form>
+
+        <div className="mt-8 text-center">
+          <button
+            onClick={() => navigate('/solar-calculator')}
+            className="text-primary hover:text-primary/80 text-sm font-medium flex items-center justify-center mx-auto dark:text-blue-400"
+          >
+            <span className="mr-2">☀️</span>
+            حاسبة الطاقة الشمسية (Solar Calculator)
+          </button>
+        </div>
       </div>
     </div>
   );
