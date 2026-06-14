@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { Sun } from 'lucide-react';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -130,6 +131,19 @@ const Login = () => {
             {formLoading ? 'Signing in...' : 'Sign in'}
           </button>
         </form>
+
+        <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-700 text-center">
+          <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
+            Looking for public tools?
+          </p>
+          <Link
+            to="/solar-calculator"
+            className="inline-flex items-center justify-center w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors"
+          >
+            <Sun className="mr-2 h-5 w-5 text-yellow-500" />
+            Solar Calculator (حاسبة الطاقة الشمسية)
+          </Link>
+        </div>
       </div>
     </div>
   );
