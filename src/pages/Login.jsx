@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 const Login = () => {
@@ -130,6 +130,12 @@ const Login = () => {
             {formLoading ? 'Signing in...' : 'Sign in'}
           </button>
         </form>
+        <div className="mt-6 text-center">
+          <Link to="/calculator" className="text-sm font-medium text-primary hover:underline flex items-center justify-center gap-1">
+            <span className="material-symbols-outlined text-sm">solar_power</span>
+            حاسبة الطاقة الشمسية (Solar Calculator)
+          </Link>
+        </div>
       </div>
     </div>
   );
