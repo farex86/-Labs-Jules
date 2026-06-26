@@ -1,118 +1,53 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
+import useSWR from 'swr';
 import { supabase } from '../../lib/supabase';
 import AnalyticsChart from '../../components/AnalyticsChart';
+import { fetchDashboardData } from '../../models/AdminModel';
+import { motion } from 'framer-motion';
+import { SkeletonLoader } from '../../components/ui/SkeletonLoader';
 
 const AdminDashboard = () => {
-  const [stats, setStats] = useState({
+  const { data, error, isLoading: loading } = useSWR('adminDashboard', fetchDashboardData, {
+    revalidateOnFocus: false, // basic caching
+  });
+
+  const stats = data?.stats || {
     totalBeneficiaries: 0,
     activeVendors: 0,
     vouchersIssued: 0,
     vouchersRedeemed: 0,
     redemptionRate: 0,
-  });
-  const [recentTransactions, setRecentTransactions] = useState([]);
-  const [chartData, setChartData] = useState({
+  };
+  const recentTransactions = data?.recentTransactions || [];
+  const chartData = data?.chartData || {
     programDistribution: [],
     monthlyTransactions: [],
     statusDistribution: [],
-  });
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
-
-  const fetchDashboardData = async () => {
-    try {
-      const [beneficiariesResult, vendorsResult, vouchersResult, transactionsResult] = await Promise.all([
-        supabase.from('beneficiaries').select('id', { count: 'exact', head: true }),
-        supabase.from('vendors').select('id', { count: 'exact', head: true }).eq('status', 'active'),
-        supabase.from('vouchers').select('id, status', { count: 'exact' }),
-        supabase.from('transactions')
-          .select(`
-            id,
-            amount,
-            status,
-            created_at,
-            beneficiary_id,
-            vendor_id,
-            beneficiaries (
-              profiles (
-                full_name
-              ),
-              national_id
-            ),
-            vendors (
-              business_name
-            ),
-            vouchers (
-              code
-            )
-          `)
-          .order('created_at', { ascending: false })
-          .limit(5)
-      ]);
-
-      const vouchersIssued = vouchersResult.count || 0;
-      const vouchersRedeemed = vouchersResult.data?.filter(v => v.status === 'used').length || 0;
-      const redemptionRate = vouchersIssued > 0 ? ((vouchersRedeemed / vouchersIssued) * 100).toFixed(1) : 0;
-
-      setStats({
-        totalBeneficiaries: beneficiariesResult.count || 0,
-        activeVendors: vendorsResult.count || 0,
-        vouchersIssued,
-        vouchersRedeemed,
-        redemptionRate,
-      });
-
-      setRecentTransactions(transactionsResult.data || []);
-
-      const { data: programData } = await supabase
-        .from('voucher_programs')
-        .select('name, vouchers(count)');
-
-      const programDistribution = (programData || []).map(p => ({
-        label: p.name,
-        value: p.vouchers?.[0]?.count || 0
-      }));
-
-      const { data: vouchersByStatus } = await supabase
-        .from('vouchers')
-        .select('status');
-
-      const statusCounts = (vouchersByStatus || []).reduce((acc, v) => {
-        acc[v.status] = (acc[v.status] || 0) + 1;
-        return acc;
-      }, {});
-
-      const statusDistribution = Object.entries(statusCounts).map(([key, value]) => ({
-        label: key.charAt(0).toUpperCase() + key.slice(1),
-        value
-      }));
-
-      setChartData({
-        programDistribution,
-        statusDistribution,
-        monthlyTransactions: []
-      });
-
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
-    } finally {
-      setLoading(false);
-    }
   };
+
+  if (error) {
+    return <div className="p-8 text-red-500">Error loading dashboard: {error.message}</div>;
+  }
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="h-full w-full"
+      >
+        <SkeletonLoader />
+      </motion.div>
     );
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="flex flex-col h-full"
+    >
       <header className="h-16 flex items-center justify-between px-8 bg-white dark:bg-slate-900 border-b border-primary/10 shadow-sm z-10 shrink-0">
         <div className="flex items-center max-w-md w-full">
           <div className="relative w-full">
@@ -297,7 +232,7 @@ const AdminDashboard = () => {
           </div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 

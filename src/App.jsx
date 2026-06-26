@@ -31,13 +31,19 @@ import RedemptionConfirmation from './pages/vendor/RedemptionConfirmation';
 import VendorHistory from './pages/vendor/VendorHistory';
 import SyncData from './pages/vendor/SyncData';
 
+// Public Pages
+import SolarCalculatorPage from './pages/public/SolarCalculatorPage';
+import { Toaster } from 'react-hot-toast';
+
 function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <Toaster position="top-right" />
         <Routes>
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/solar-calculator" element={<SolarCalculatorPage />} />
 
           {/* Admin Routes */}
           <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin']}><AdminLayout /></ProtectedRoute>}>
