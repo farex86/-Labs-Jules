@@ -23,12 +23,12 @@ const Login = () => {
           navigate('/vendor');
           break;
         default:
-          setError('Unknown user role');
-          setFormLoading(false);
+          setTimeout(() => setError('Unknown user role'), 0);
+          setTimeout(() => setFormLoading(false), 0);
       }
     } else if (user && !authLoading && !profile) {
-      setError('User profile not found. Please contact administrator.');
-      setFormLoading(false);
+      setTimeout(() => setError('User profile not found. Please contact administrator.'), 0);
+      setTimeout(() => setFormLoading(false), 0);
     }
   }, [user, profile, authLoading, navigate]);
 
