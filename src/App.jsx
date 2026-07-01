@@ -9,6 +9,9 @@ import VendorLayout from './layouts/VendorLayout';
 // Auth Pages
 import Login from './pages/Login';
 
+// Public Tools
+import SolarCalculator from './pages/SolarCalculator';
+
 // Admin Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
 import BeneficiaryManagement from './pages/admin/BeneficiaryManagement';
@@ -38,6 +41,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/solar-calculator" element={<SolarCalculator />} />
 
           {/* Admin Routes */}
           <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin']}><AdminLayout /></ProtectedRoute>}>
