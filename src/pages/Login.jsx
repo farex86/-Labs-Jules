@@ -130,6 +130,18 @@ const Login = () => {
             {formLoading ? 'Signing in...' : 'Sign in'}
           </button>
         </form>
+
+        <div className="mt-6 text-center">
+          <p className="text-sm text-slate-600 dark:text-slate-400">
+            Looking for public tools?
+          </p>
+          <a
+            href="/solar-calculator"
+            className="mt-2 inline-flex items-center text-sm font-medium text-primary hover:text-primary/80"
+          >
+            Try our Solar Calculator →
+          </a>
+        </div>
       </div>
     </div>
   );
