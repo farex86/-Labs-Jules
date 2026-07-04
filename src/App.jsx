@@ -5,9 +5,13 @@ import ProtectedRoute from './components/ProtectedRoute';
 import AdminLayout from './layouts/AdminLayout';
 import BeneficiaryLayout from './layouts/BeneficiaryLayout';
 import VendorLayout from './layouts/VendorLayout';
+import { Toaster } from 'react-hot-toast';
 
 // Auth Pages
 import Login from './pages/Login';
+
+// Public Pages
+import SolarCalculator from './pages/public/SolarCalculator';
 
 // Admin Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -35,9 +39,11 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <Toaster position="top-center" />
         <Routes>
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/calculator" element={<SolarCalculator />} />
 
           {/* Admin Routes */}
           <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin']}><AdminLayout /></ProtectedRoute>}>
