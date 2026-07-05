@@ -79,6 +79,15 @@ const Login = () => {
           </div>
         </div>
 
+        <div className="mt-6 text-center">
+          <p className="text-sm text-slate-600 dark:text-slate-400">
+            Looking for the Solar Calculator?{' '}
+            <a href="/calculator" className="font-medium text-primary hover:text-primary/80 transition-colors">
+              Click here
+            </a>
+          </p>
+        </div>
+
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           {error && (
             <div className="rounded-md bg-red-50 dark:bg-red-900/20 p-4">
