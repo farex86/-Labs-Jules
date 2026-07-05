@@ -24,6 +24,9 @@ import TransactionHistory from './pages/beneficiary/TransactionHistory';
 
 // Vendor Pages
 import VendorLogin from './pages/vendor/VendorLogin';
+
+// Public Pages
+import SolarCalculator from './pages/SolarCalculator';
 import VendorDashboard from './pages/vendor/VendorDashboard';
 import RedeemVoucher from './pages/vendor/RedeemVoucher';
 import VoucherDetails from './pages/vendor/VoucherDetails';
@@ -38,6 +41,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/calculator" element={<SolarCalculator />} />
 
           {/* Admin Routes */}
           <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin']}><AdminLayout /></ProtectedRoute>}>
