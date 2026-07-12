@@ -25,6 +25,10 @@ import TransactionHistory from './pages/beneficiary/TransactionHistory';
 // Vendor Pages
 import VendorLogin from './pages/vendor/VendorLogin';
 import VendorDashboard from './pages/vendor/VendorDashboard';
+
+// Public Pages
+import SolarCalculator from './pages/public/SolarCalculator';
+import { Toaster } from 'react-hot-toast';
 import RedeemVoucher from './pages/vendor/RedeemVoucher';
 import VoucherDetails from './pages/vendor/VoucherDetails';
 import RedemptionConfirmation from './pages/vendor/RedemptionConfirmation';
@@ -34,10 +38,12 @@ import SyncData from './pages/vendor/SyncData';
 function App() {
   return (
     <BrowserRouter>
+      <Toaster position="top-center" />
       <AuthProvider>
         <Routes>
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/solar-calculator" element={<SolarCalculator />} />
 
           {/* Admin Routes */}
           <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin']}><AdminLayout /></ProtectedRoute>}>
