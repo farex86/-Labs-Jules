@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 const Login = () => {
@@ -130,6 +130,14 @@ const Login = () => {
             {formLoading ? 'Signing in...' : 'Sign in'}
           </button>
         </form>
+
+        <div className="mt-8 text-center text-sm text-slate-500 dark:text-slate-400">
+          <div className="mt-2">
+            <Link to="/solar-calculator" className="text-primary hover:text-primary/80 font-medium">
+              جرب الحاسبة الشمسية (Solar Calculator)
+            </Link>
+          </div>
+        </div>
       </div>
     </div>
   );
