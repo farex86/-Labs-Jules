@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 const Login = () => {
@@ -130,6 +130,12 @@ const Login = () => {
             {formLoading ? 'Signing in...' : 'Sign in'}
           </button>
         </form>
+
+        <div className="text-center mt-6">
+          <Link to="/solar-calculator" className="text-sm font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-colors">
+            Try our Solar Calculator (Public Tool)
+          </Link>
+        </div>
       </div>
     </div>
   );
