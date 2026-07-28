@@ -7,6 +7,8 @@ import BeneficiaryLayout from './layouts/BeneficiaryLayout';
 import VendorLayout from './layouts/VendorLayout';
 
 // Auth Pages
+import { Toaster } from 'react-hot-toast';
+import SolarCalculator from './pages/public/SolarCalculator';
 import Login from './pages/Login';
 
 // Admin Pages
@@ -35,9 +37,11 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <Toaster position="top-right" />
         <Routes>
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/calculator" element={<SolarCalculator />} />
 
           {/* Admin Routes */}
           <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin']}><AdminLayout /></ProtectedRoute>}>
