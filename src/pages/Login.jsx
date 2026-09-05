@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 const Login = () => {
@@ -77,6 +77,12 @@ const Login = () => {
             <div><strong>Beneficiary:</strong> beneficiary@demo.local / Beneficiary123!</div>
             <div><strong>Vendor:</strong> vendor@demo.local / Vendor123!</div>
           </div>
+        </div>
+
+        <div className="text-center mt-4">
+          <Link to="/calculator" className="text-primary hover:text-primary/80 font-medium text-sm flex items-center justify-center gap-2">
+            <span>☀️</span> Try our Solar Calculator
+          </Link>
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
