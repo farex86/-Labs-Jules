@@ -9,6 +9,9 @@ import VendorLayout from './layouts/VendorLayout';
 // Auth Pages
 import Login from './pages/Login';
 
+// Public Pages
+import SolarCalculator from './pages/public/SolarCalculator';
+
 // Admin Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
 import BeneficiaryManagement from './pages/admin/BeneficiaryManagement';
@@ -30,14 +33,19 @@ import VoucherDetails from './pages/vendor/VoucherDetails';
 import RedemptionConfirmation from './pages/vendor/RedemptionConfirmation';
 import VendorHistory from './pages/vendor/VendorHistory';
 import SyncData from './pages/vendor/SyncData';
+import { Toaster } from 'react-hot-toast';
 
 function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <Toaster position="bottom-center" />
         <Routes>
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<Login />} />
+
+          {/* Public Routes */}
+          <Route path="/calculator" element={<SolarCalculator />} />
 
           {/* Admin Routes */}
           <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin']}><AdminLayout /></ProtectedRoute>}>
