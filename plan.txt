@@ -1,0 +1,48 @@
+The user wants to implement a Solar Calculator module as part of the public-facing tools, specifically focusing on the Arabic localization of facility types and their consumption patterns.
+
+Key elements of the request:
+1.  **Separation of Concerns:** Always separate business logic, formulas, and constant configuration data from UI components.
+2.  **Solar Calculator:** Create a Solar Calculator.
+3.  **Specific Facility Types (Arabic):**
+    *   مصنع ثلج (Ice Factory - corrected spelling)
+    *   شركة (Company/Office)
+    *   مزرعة (Farm)
+    *   مزرعة دواجن (Poultry Farm)
+    *   بيوت محمية (Greenhouses)
+    *   مصنع (Factory)
+    *   مستوصف (Clinic)
+    *   مستشفى (Hospital)
+    *   مخبز (Bakery)
+    *   دكان (Shop)
+    *   ورشة (Workshop)
+    *   مضخة مياه (Water Pump - corrected spelling from موية to مياه, though colloquial موية is common, let's use standard or allow both)
+    *   دونكي (Water Well/Donkey)
+    *   مسجد (Mosque)
+    *   مطبعة (Printing Press)
+    *   كوفي شوب (Coffee Shop)
+    *   مطعم (Restaurant)
+    *   فندق (Hotel)
+    *   بنك (Bank)
+    *   سوبر ماركت (Supermarket)
+    *   طرمبة وقود (Gas Station)
+    *   شركة تعدين (Mining Company)
+
+Plan:
+1.  **Create `src/models/SolarCalculatorModel.js`**:
+    *   Define the array of facility types in Arabic as requested.
+    *   Define default or example consumption patterns/devices for these facility types.
+    *   Create calculation functions (e.g., total energy needed, recommended solar panels, battery size, etc.) - simple placeholder logic or basic math if specific formulas aren't provided. The prompt says "add consumption patterns with their devices", so I'll create a structured configuration mapping each facility to common devices and their typical consumption (Watts) and daily usage (Hours).
+
+2.  **Create `src/pages/public/SolarCalculator.jsx`**:
+    *   Implement the UI for the solar calculator.
+    *   RTL layout support (`dir="rtl"`).
+    *   Use Tailwind CSS.
+    *   State management for user selections (facility type, selected devices, custom inputs).
+    *   Import data and logic from `SolarCalculatorModel.js`.
+
+3.  **Update `src/App.jsx`**:
+    *   Add a route for `/calculator` pointing to `SolarCalculator.jsx`.
+    *   Need a `PublicLayout` or just a simple wrapping for public pages if it doesn't exist. Let's just add it as a direct route or create a simple layout.
+
+4.  **Testing**:
+    *   Verify the page renders properly.
