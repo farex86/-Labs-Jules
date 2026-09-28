@@ -30,6 +30,7 @@ import VoucherDetails from './pages/vendor/VoucherDetails';
 import RedemptionConfirmation from './pages/vendor/RedemptionConfirmation';
 import VendorHistory from './pages/vendor/VendorHistory';
 import SyncData from './pages/vendor/SyncData';
+import SolarCalculator from './pages/public/SolarCalculator';
 
 function App() {
   return (
@@ -38,6 +39,8 @@ function App() {
         <Routes>
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<Login />} />
+
+          <Route path="/calculator" element={<SolarCalculator />} />
 
           {/* Admin Routes */}
           <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin']}><AdminLayout /></ProtectedRoute>}>
