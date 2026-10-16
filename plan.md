@@ -1,0 +1,5 @@
+1. **Create SolarCalculatorModel.js**: Create `src/models/SolarCalculatorModel.js` to centralize the Arabic localized configuration data. This will include a list of facility types (e.g., مصنع تلج, شركة, مزرعة, الخ) and their typical devices (consumption patterns), along with the calculation logic for solar requirements (e.g., calculating total daily Wh/kWh based on device power, quantity, and daily usage hours).
+2. **Create SolarCalculator.jsx UI**: Create `src/pages/public/SolarCalculator.jsx`. This component will use `useReducer` for state management, allow the user to select a facility type, adjust devices (quantity, watts, hours of operation), and view the calculated solar requirements. It will have RTL support (`dir="rtl"`) and use Tailwind CSS for styling.
+3. **Update Routing**: Modify `src/App.jsx` to register the new public route `/calculator` pointing to the `SolarCalculator` component.
+4. **Pre-commit and Verification**: Run frontend verification instructions, ensure everything works correctly without warnings (like ESLint issues), and complete the pre-commit steps.
+5. **Submit**: Submit the changes.
