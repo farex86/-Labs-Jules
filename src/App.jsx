@@ -1,10 +1,14 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminLayout from './layouts/AdminLayout';
 import BeneficiaryLayout from './layouts/BeneficiaryLayout';
 import VendorLayout from './layouts/VendorLayout';
+
+// Public Pages
+import SolarCalculator from './pages/public/SolarCalculator';
 
 // Auth Pages
 import Login from './pages/Login';
@@ -34,8 +38,12 @@ import SyncData from './pages/vendor/SyncData';
 function App() {
   return (
     <BrowserRouter>
+      <Toaster position="top-center" />
       <AuthProvider>
         <Routes>
+          {/* Public Routes */}
+          <Route path="/calculator" element={<SolarCalculator />} />
+
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<Login />} />
 
