@@ -2,6 +2,10 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import { Toaster } from 'react-hot-toast';
+
+// Public Pages
+import SolarCalculator from './pages/public/SolarCalculator';
 import AdminLayout from './layouts/AdminLayout';
 import BeneficiaryLayout from './layouts/BeneficiaryLayout';
 import VendorLayout from './layouts/VendorLayout';
@@ -35,9 +39,11 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <Toaster position="top-right" />
         <Routes>
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/calculator" element={<SolarCalculator />} />
 
           {/* Admin Routes */}
           <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin']}><AdminLayout /></ProtectedRoute>}>
