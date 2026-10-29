@@ -6,6 +6,9 @@ import AdminLayout from './layouts/AdminLayout';
 import BeneficiaryLayout from './layouts/BeneficiaryLayout';
 import VendorLayout from './layouts/VendorLayout';
 
+// Public Pages
+import SolarCalculator from './pages/public/SolarCalculator';
+
 // Auth Pages
 import Login from './pages/Login';
 
@@ -37,6 +40,7 @@ function App() {
       <AuthProvider>
         <Routes>
           <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="/calculator" element={<SolarCalculator />} />
           <Route path="/login" element={<Login />} />
 
           {/* Admin Routes */}
