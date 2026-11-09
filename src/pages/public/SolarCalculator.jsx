@@ -1,0 +1,232 @@
+import React, { useReducer } from 'react';
+import { Plus, Trash2, Calculator, Save } from 'lucide-react';
+import { FACILITY_TYPES, calculateSolarSystem, SYSTEM_CONSTANTS } from '../../models/SolarCalculatorModel';
+// eslint-disable-next-line no-unused-vars
+import { motion } from 'motion/react';
+import toast from 'react-hot-toast';
+
+const generateId = () => Math.random().toString(36).substring(2, 9);
+
+const initialState = {
+  selectedFacility: '',
+  appliances: [],
+  results: null
+};
+
+function reducer(state, action) {
+  switch (action.type) {
+    case 'SET_FACILITY': {
+      const facility = FACILITY_TYPES.find(f => f.id === action.payload);
+      return {
+        ...state,
+        selectedFacility: action.payload,
+        appliances: facility ? facility.defaultAppliances.map(app => ({ ...app, id: generateId() })) : [],
+        results: null
+      };
+    }
+    case 'ADD_APPLIANCE':
+      return {
+        ...state,
+        appliances: [...state.appliances, { id: generateId(), name: 'جهاز جديد', power: 100, quantity: 1, hours: 8 }],
+        results: null
+      };
+    case 'UPDATE_APPLIANCE':
+      return {
+        ...state,
+        appliances: state.appliances.map(app =>
+          app.id === action.payload.id ? { ...app, [action.payload.field]: action.payload.value } : app
+        ),
+        results: null
+      };
+    case 'REMOVE_APPLIANCE':
+      return {
+        ...state,
+        appliances: state.appliances.filter(app => app.id !== action.payload),
+        results: null
+      };
+    case 'CALCULATE':
+      return {
+        ...state,
+        results: calculateSolarSystem(state.appliances)
+      };
+    default:
+      return state;
+  }
+}
+
+export default function SolarCalculator() {
+  const [state, dispatch] = useReducer(reducer, initialState);
+
+  const handleCalculate = () => {
+    dispatch({ type: 'CALCULATE' });
+    toast.success('تم حساب النظام بنجاح');
+  };
+
+  return (
+    <div dir="rtl" className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 font-sans">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="max-w-4xl mx-auto space-y-8"
+      >
+        <div className="text-center">
+          <h1 className="text-3xl font-extrabold text-gray-900">حاسبة الطاقة الشمسية</h1>
+          <p className="mt-4 text-lg text-gray-600">
+            اختر نوع المنشأة الخاصة بك لتعبئة الأجهزة الافتراضية، أو أضف أجهزتك يدوياً
+          </p>
+        </div>
+
+        <div className="bg-white shadow rounded-lg p-6">
+          <div className="mb-6">
+            <label htmlFor="facility" className="block text-sm font-medium text-gray-700 mb-2">نوع المنشأة</label>
+            <select
+              id="facility"
+              className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+              value={state.selectedFacility}
+              onChange={(e) => dispatch({ type: 'SET_FACILITY', payload: e.target.value })}
+            >
+              <option value="">-- اختر المنشأة --</option>
+              {FACILITY_TYPES.map(facility => (
+                <option key={facility.id} value={facility.id}>{facility.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-bold text-gray-800">الأجهزة الكهربائية</h2>
+              <button
+                onClick={() => dispatch({ type: 'ADD_APPLIANCE' })}
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+              >
+                <Plus className="ml-2 h-4 w-4" /> إضافة جهاز
+              </button>
+            </div>
+
+            {state.appliances.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">لا توجد أجهزة مضافة. اختر منشأة أو أضف جهازاً جديداً.</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">اسم الجهاز</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">القدرة (واط)</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">العدد</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">ساعات التشغيل/يوم</th>
+                      <th className="px-6 py-3"></th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {state.appliances.map((app) => (
+                      <tr key={app.id}>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <input
+                            type="text"
+                            value={app.name}
+                            onChange={(e) => dispatch({ type: 'UPDATE_APPLIANCE', payload: { id: app.id, field: 'name', value: e.target.value } })}
+                            className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                          />
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <input
+                            type="number"
+                            min="0"
+                            value={app.power}
+                            onChange={(e) => dispatch({ type: 'UPDATE_APPLIANCE', payload: { id: app.id, field: 'power', value: e.target.value } })}
+                            className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                          />
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <input
+                            type="number"
+                            min="1"
+                            value={app.quantity}
+                            onChange={(e) => dispatch({ type: 'UPDATE_APPLIANCE', payload: { id: app.id, field: 'quantity', value: e.target.value } })}
+                            className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                          />
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <input
+                            type="number"
+                            min="1"
+                            max="24"
+                            value={app.hours}
+                            onChange={(e) => dispatch({ type: 'UPDATE_APPLIANCE', payload: { id: app.id, field: 'hours', value: e.target.value } })}
+                            className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                          />
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-left text-sm font-medium">
+                          <button
+                            onClick={() => dispatch({ type: 'REMOVE_APPLIANCE', payload: app.id })}
+                            className="text-red-600 hover:text-red-900"
+                          >
+                            <Trash2 className="h-5 w-5" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          <div className="mt-6 flex justify-end">
+            <button
+              onClick={handleCalculate}
+              disabled={state.appliances.length === 0}
+              className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 disabled:bg-gray-400"
+            >
+              <Calculator className="ml-2 h-5 w-5" /> احسب النظام
+            </button>
+          </div>
+        </div>
+
+        {state.results && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white shadow rounded-lg p-6"
+          >
+            <h2 className="text-2xl font-bold text-gray-900 mb-6 border-b pb-2">النتائج التقديرية</h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                <div className="text-blue-500 text-sm font-semibold mb-1">الاستهلاك اليومي</div>
+                <div className="text-2xl font-bold text-gray-900">
+                  {(state.results.totalDailyEnergyWh / 1000).toFixed(2)} <span className="text-sm text-gray-500 font-normal">كيلو واط ساعة</span>
+                </div>
+              </div>
+
+              <div className="bg-green-50 p-4 rounded-lg border border-green-100">
+                <div className="text-green-500 text-sm font-semibold mb-1">سعة المحول (الإنفرتر)</div>
+                <div className="text-2xl font-bold text-gray-900">
+                  {(state.results.inverterCapacityW / 1000).toFixed(2)} <span className="text-sm text-gray-500 font-normal">كيلو واط</span>
+                </div>
+              </div>
+
+              <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-100">
+                <div className="text-yellow-600 text-sm font-semibold mb-1">الألواح الشمسية ({state.results.panelWattage}W)</div>
+                <div className="text-2xl font-bold text-gray-900">
+                  {state.results.numberOfPanels} <span className="text-sm text-gray-500 font-normal">لوح</span>
+                </div>
+              </div>
+
+              <div className="bg-purple-50 p-4 rounded-lg border border-purple-100">
+                <div className="text-purple-500 text-sm font-semibold mb-1">البطاريات ({state.results.batteryVoltage}V {state.results.batteryCapacity}Ah)</div>
+                <div className="text-2xl font-bold text-gray-900">
+                  {state.results.numberOfBatteries} <span className="text-sm text-gray-500 font-normal">بطارية</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-8 text-sm text-gray-500 bg-gray-50 p-4 rounded border">
+              <strong>ملاحظة:</strong> هذه الحسابات تقديرية وتعتمد على ساعات إشراق شمس مقدرة بـ {SYSTEM_CONSTANTS?.PEAK_SUN_HOURS || 5} ساعات، ونسبة فقد {Math.round(((SYSTEM_CONSTANTS?.SYSTEM_LOSSES || 1.3) - 1) * 100)}% في النظام. يرجى استشارة مهندس مختص للحصول على تصميم دقيق.
+            </div>
+          </motion.div>
+        )}
+      </motion.div>
+    </div>
+  );
+}
